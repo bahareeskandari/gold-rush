@@ -179,29 +179,9 @@ def verify_admin_token(authorization: str = Header(...)):
         raise HTTPException(status_code=403, detail="Invalid admin token")
 
 
-
-@app.websocket("/ws/board")
-async def board_stream(websocket: WebSocket):
-    await websocket.accept()
-    print("connection open")
-    try:
-        while True:
-            await asyncio.sleep(1)
-            with lock:
-                board_data = {
-                    "gold": list(gold_positions),
-                    "spiders": list(spider_positions),
-                    "mountains": list(mountain_positions),
-                    "entities": {
-                        k: {"x": e.x, "y": e.y, "race": e.race, "score": e.score}
-                        for k, e in entities.items()
-                    }
-                }
-            await websocket.send_json(board_data)
-    except Exception as e:
-        print("connection closed", e)
-
-
+@app.get("/", include_in_schema=False)
+def root():
+    return {"status": "Server is running"}
 
 @app.post("/register")
 def register(request: RegisterRequest):
