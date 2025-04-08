@@ -17,8 +17,4 @@ A grid-based multiplayer adventure game controlled entirely via a backend API. P
 
 #### Visit: http://localhost:8000/docs
 
-# FastAPI deploy on Render
-
-## run command for backend dev mode
-
-- uvicorn main:app --reload
+# Backend deploy on Fly.io
