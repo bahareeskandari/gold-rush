@@ -8,15 +8,22 @@ from enum import Enum
 import os
 from dotenv import load_dotenv
 import asyncio
-
+from contextlib import asynccontextmanager
 
 load_dotenv()
 ADMIN_PASSWORD = os.getenv("VITE_ADMIN_PASSWORD")
 if not ADMIN_PASSWORD:
     raise RuntimeError("ADMIN_PASSWORD is not set in .env")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("=== Server starting up, generating world ===")
+    generate_world()
+    print_board()
+    yield  # server runs while yielding
+    # (optional shutdown code can go here)
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -65,6 +72,12 @@ class Entity:
 
     def pos(self):
         return (self.x, self.y)
+
+@app.on_event("startup")
+def startup_event():
+    print("=== Server starting up, generating world ===")
+    generate_world()
+    print_board()
 
 def is_safe_tile(x, y):
     return 1 <= x < WORLD_SIZE - 1 and 1 <= y < WORLD_SIZE - 1
@@ -329,13 +342,11 @@ def pickup(payload: EntityKeyPayload):
     return {"score": entity.score}
 
 
-
-
 @app.get("/score", summary="Get player score", description="Example: `/score?entityKey=1234567890`")
 def score(entityKey: str):
     if not entityKey or entityKey not in entities:
         raise HTTPException(status_code=400, detail="Invalid entity key")
-    return {"score": entities[entityKey].score}
+    return {"gold": entities[entityKey].score, }
 
 
 # , include_in_schema=False
@@ -361,14 +372,14 @@ def stop_game(_: str = Depends(verify_admin_token)):
     return {"status": "game stopped and all data cleared"}
 
 # , include_in_schema=False
-@app.get("/admin/start")
-def start_game(_: str = Depends(verify_admin_token)):
+@app.get("/admin/restart")
+def restart_game(_: str = Depends(verify_admin_token)):
     with lock:
         entities.clear()
         entity_last_action.clear()
         generate_world()
         print_board()
-    return {"status": "game started"}
+    return {"status": "game restarted"}
 
 # , include_in_schema=False
 @app.get("/admin/world")

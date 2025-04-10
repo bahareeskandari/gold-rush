@@ -1,11 +1,11 @@
 type Props = {
-  score: number | null
+  gold: number | null
   entityKey: string
   onLogout: () => void
 }
 
 export default function HackathonUserView({
-  score,
+  gold,
   entityKey,
   onLogout,
 }: Props) {
@@ -13,7 +13,7 @@ export default function HackathonUserView({
     <div className="user-dashboard">
       <h2>Welcome Hackathon Hero</h2>
       <p>
-        Your current score: <strong>{score ?? '...'}</strong>
+        Your current score: <strong>{gold ?? '...'}</strong>
       </p>
       <p>Entity ID: {entityKey}</p>
       <button onClick={onLogout}>Logout</button>

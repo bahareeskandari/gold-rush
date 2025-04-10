@@ -10,9 +10,36 @@ function App() {
   const [adminPassword, setAdminPassword] = useState('')
   const [entityKey, setEntityKey] = useState('')
   const [world, setWorld] = useState(null)
-  const [score, setScore] = useState<number | null>(null)
+  const [gold, setGold] = useState<number | null>(null)
+  const [checkingEntityId, setCheckingEntityId] = useState(true)
 
   const mode = adminPassword ? 'admin' : entityKey ? 'user' : null
+
+  // Auto-login via ?entityId=...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const fromQuery = params.get('entityId')
+    if (!fromQuery) {
+      setCheckingEntityId(false)
+      return
+    }
+
+    const tryEntity = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/score?entityKey=${fromQuery}`)
+        if (!res.ok) throw new Error('Invalid or expired entityId')
+        const data = await res.json()
+        setEntityKey(fromQuery)
+        setGold(data.gold)
+      } catch (err) {
+        console.warn('Auto-login failed:', err)
+      } finally {
+        setCheckingEntityId(false)
+      }
+    }
+
+    tryEntity()
+  }, [])
 
   useEffect(() => {
     if (mode === 'admin') {
@@ -39,19 +66,19 @@ function App() {
 
   useEffect(() => {
     if (mode === 'user') {
-      const fetchScore = async () => {
+      const fetchStatus = async () => {
         try {
           const res = await fetch(`${BACKEND_URL}/score?entityKey=${entityKey}`)
-          if (!res.ok) throw new Error('Failed to fetch score')
+          if (!res.ok) throw new Error('Failed to fetch status')
           const data = await res.json()
-          setScore(data.score)
+          setGold(data.gold)
         } catch (err) {
           console.error('Score fetch error:', err)
         }
       }
 
-      fetchScore()
-      const interval = setInterval(fetchScore, 1000)
+      fetchStatus()
+      const interval = setInterval(fetchStatus, 1000)
       return () => clearInterval(interval)
     }
   }, [entityKey])
@@ -60,8 +87,11 @@ function App() {
     setAdminPassword('')
     setEntityKey('')
     setWorld(null)
-    setScore(null)
+    setGold(null)
   }
+
+  // Wait for query string check before showing login
+  if (checkingEntityId) return <p style={{ textAlign: 'center' }}>Loading...</p>
 
   if (!mode) {
     return (
@@ -79,7 +109,7 @@ function App() {
   if (mode === 'user') {
     return (
       <HackathonUserView
-        score={score}
+        gold={gold}
         entityKey={entityKey}
         onLogout={handleLogout}
       />
