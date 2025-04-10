@@ -1,81 +1,92 @@
-import React, { useEffect, useState } from "react";
-import "./App.css"; // We'll style here
+import { useEffect, useState } from 'react'
+import './App.css'
+import AdminView from './components/AdminView'
+import HackathonUserView from './components/HackathonUserView'
+import Login from './components/Login'
 
-const WORLD_SIZE = 20;
-
-const TILE_EMOJI = {
-  gold: "🪙",
-  spider: "🕷️",
-  mountain: "⛰️",
-  ELF: "🧝",
-  ORC: "🧟",
-};
-
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
 
 function App() {
-  const [world, setWorld] = useState(null);
+  const [adminPassword, setAdminPassword] = useState('')
+  const [entityKey, setEntityKey] = useState('')
+  const [world, setWorld] = useState(null)
+  const [score, setScore] = useState<number | null>(null)
+
+  const mode = adminPassword ? 'admin' : entityKey ? 'user' : null
 
   useEffect(() => {
-    const fetchBoard = async () => {
-      try {
-        const res = await fetch(
-          `${BACKEND_URL}/admin/world?admin_password=${ADMIN_PASSWORD}`
-        );
-        if (!res.ok) throw new Error("Failed to fetch board");
-        const data = await res.json();
-        setWorld(data);
-      } catch (err) {
-        console.error("Fetch error:", err);
+    if (mode === 'admin') {
+      const fetchBoard = async () => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/admin/world`, {
+            headers: {
+              Authorization: `Bearer ${adminPassword}`,
+            },
+          })
+          if (!res.ok) throw new Error('Failed to fetch board')
+          const data = await res.json()
+          setWorld(data)
+        } catch (err) {
+          console.error('Fetch error:', err)
+        }
       }
-    };
 
-    fetchBoard(); // fetch once immediately
-    const interval = setInterval(fetchBoard, 1000); // fetch every second
+      fetchBoard()
+      const interval = setInterval(fetchBoard, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [adminPassword])
 
-    return () => clearInterval(interval);
-  }, []);
+  useEffect(() => {
+    if (mode === 'user') {
+      const fetchScore = async () => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/score?entityKey=${entityKey}`)
+          if (!res.ok) throw new Error('Failed to fetch score')
+          const data = await res.json()
+          setScore(data.score)
+        } catch (err) {
+          console.error('Score fetch error:', err)
+        }
+      }
 
-  const renderCell = (x, y) => {
-    if (!world) return null;
+      fetchScore()
+      const interval = setInterval(fetchScore, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [entityKey])
 
-    const entity = Object.values(world.entities).find(
-      (e) => e.x === x && e.y === y
-    );
-    if (entity) return TILE_EMOJI[entity.race] || "❓";
+  const handleLogout = () => {
+    setAdminPassword('')
+    setEntityKey('')
+    setWorld(null)
+    setScore(null)
+  }
 
-    if (world.gold.some(([gx, gy]) => gx === x && gy === y))
-      return TILE_EMOJI.gold;
-    if (world.spiders.some(([sx, sy]) => sx === x && sy === y))
-      return TILE_EMOJI.spider;
-    if (world.mountains.some(([mx, my]) => mx === x && my === y))
-      return TILE_EMOJI.mountain;
+  if (!mode) {
+    return (
+      <Login
+        onAdminLogin={(pwd) => setAdminPassword(pwd)}
+        onUserLogin={(key) => setEntityKey(key)}
+      />
+    )
+  }
 
-    return "";
-  };
+  if (mode === 'admin' && world) {
+    return <AdminView world={world} onLogout={handleLogout} />
+  }
 
-  return (
-    <div className="board">
-      <div style={{ marginBottom: "1rem" }}>
-        🧝 = ELF &nbsp; 🧟 = ORC &nbsp; 🪙 = Gold &nbsp; ⛰️ = Mountain &nbsp; 🕷️
-        = Spider
-      </div>
-      {Array.from({ length: WORLD_SIZE }).map((_, row) => (
-        <div className="row" key={row}>
-          {Array.from({ length: WORLD_SIZE }).map((_, col) => {
-            const x = col;
-            const y = WORLD_SIZE - 1 - row;
-            return (
-              <div className="tile" key={`${x}-${y}`}>
-                {renderCell(x, y)}
-              </div>
-            );
-          })}
-        </div>
-      ))}
-    </div>
-  );
+  if (mode === 'user') {
+    return (
+      <HackathonUserView
+        score={score}
+        entityKey={entityKey}
+        onLogout={handleLogout}
+      />
+    )
+  }
+
+  return null
 }
 
-export default App;
+export default App
