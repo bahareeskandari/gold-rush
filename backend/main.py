@@ -314,7 +314,15 @@ def walk(request: WalkRequest):
             entity.x = new_x
             entity.y = new_y
 
-    # 🛡️ Thread-safe teleport
+    # 🪙 Auto-pickup gold if standing on it
+    with lock:
+        pos = entity.pos()
+        if pos in gold_positions:
+            gold_positions.remove(pos)
+            entity.score += 1
+            logger.info(f"{entity.name} ({entity.emoji}) picked up gold at {pos}")
+
+    # 🕷️ Thread-safe teleport if near spider
     if any(abs(entity.x - x) <= 1 and abs(entity.y - y) <= 1 for (x, y) in spider_positions):
         with lock:
             while True:
@@ -331,25 +339,10 @@ def walk(request: WalkRequest):
                     entity.x = x
                     entity.y = y
                     entity.score = max(0, entity.score - 1)
+                    logger.info(f"{entity.name} ({entity.emoji}) got teleported due to spider. New position: {new_pos}")
                     break
 
-    return {"x": entity.x, "y": entity.y}
-
-
-@app.post("/pickup", summary="Collect gold if standing on it")
-def pickup(payload: EntityKeyPayload):
-    entity_key = payload.entityKey
-    if not entity_key or entity_key not in entities:
-        raise HTTPException(status_code=400, detail="Invalid entity key")
-
-    with lock:
-        entity = entities[entity_key]
-        pos = entity.pos()
-        if pos in gold_positions:
-            gold_positions.remove(pos)
-            entity.score += 1
-
-    return {"score": entity.score}
+    return {"x": entity.x, "y": entity.y, "score": entity.score}
 
 
 @app.get("/score", summary="Get player score", description="Example: `/score?entityKey=1234567890`")
