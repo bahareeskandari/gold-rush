@@ -9,6 +9,13 @@ import os
 from dotenv import load_dotenv
 import asyncio
 from contextlib import asynccontextmanager
+import logging
+
+logger = logging.getLogger("Gold Rush")  # Creates a named logger instance
+logging.basicConfig(level=logging.INFO)  # Sets default config: level, output to stdout
+
+
+cleanup_enabled = True
 
 load_dotenv()
 ADMIN_PASSWORD = os.getenv("VITE_ADMIN_PASSWORD")
@@ -17,9 +24,10 @@ if not ADMIN_PASSWORD:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("=== Server starting up, generating world ===")
+    logger.info("=== Server starting up, generating world ===")
     generate_world()
     print_board()
+    start_cleanup_thread()
     yield  # server runs while yielding
     # (optional shutdown code can go here)
 
@@ -46,7 +54,8 @@ entity_last_action = {}
 lock = threading.Lock()
 
 class RegisterRequest(BaseModel):
-    race: str
+    name: str
+    emoji: str
 
 class AdminRequest(BaseModel):
     admin_password: str    
@@ -64,20 +73,15 @@ class WalkRequest(EntityKeyPayload):
     direction: Direction
 
 class Entity:
-    def __init__(self, x, y, race):
+    def __init__(self, x, y, name, emoji):
         self.x = x
         self.y = y
-        self.race = race
+        self.name = name
+        self.emoji= emoji
         self.score = 0
 
     def pos(self):
         return (self.x, self.y)
-
-@app.on_event("startup")
-def startup_event():
-    print("=== Server starting up, generating world ===")
-    generate_world()
-    print_board()
 
 def is_safe_tile(x, y):
     return 1 <= x < WORLD_SIZE - 1 and 1 <= y < WORLD_SIZE - 1
@@ -177,11 +181,17 @@ def is_adjacent_to_spider(x, y):
             return True
     return False
 
+def start_cleanup_thread():
+    def cleanup_loop():
+        while True:
+            time.sleep(180)  # wait 3 minutes
+            if cleanup_enabled:
+                with lock:
+                    cleanup_entities()
 
+    t = threading.Thread(target=cleanup_loop, daemon=True)
+    t.start()
 
-# def verify_admin_password(password: str):
-#     if password != ADMIN_PASSWORD:
-#         raise HTTPException(status_code=403, detail="Invalid admin password")
 
 def verify_admin_token(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):
@@ -215,10 +225,10 @@ def register(request: RegisterRequest):
                 break
 
         entity_key = str(random.getrandbits(64))
-        entities[entity_key] = Entity(x, y, request.race)
+        entities[entity_key] = Entity(x, y, request.name, request.emoji)
         entity_last_action[entity_key] = time.time()
 
-        return {"entityKey": entity_key, "x": x, "y": y}
+        return {"entityKey": entity_key, "name": request.name, "emoji": request.emoji, "x": x, "y": y}
 
 @app.get(
     "/look",
@@ -353,7 +363,7 @@ def score(entityKey: str):
 @app.get("/leaderboard")
 def leaderboard(_: str = Depends(verify_admin_token)):
     board = [
-        {"entityKey": key, "race": e.race, "score": e.score}
+        {"entityKey": key, "name": e.name, "emoji": e.emoji, "score": e.score}
         for key, e in entities.items()
     ]
     board.sort(key=lambda x: x["score"], reverse=True)
@@ -362,24 +372,30 @@ def leaderboard(_: str = Depends(verify_admin_token)):
 # , include_in_schema=False
 @app.get("/admin/stop")
 def stop_game(_: str = Depends(verify_admin_token)):
+    global cleanup_enabled
+    cleanup_enabled = False
     with lock:
         gold_positions.clear()
         spider_positions.clear()
         mountain_positions.clear()
         entities.clear()
         entity_last_action.clear()
-    print("=== GAME STOPPED ===")
+    logger.info("=== GAME STOPPED ===")
     return {"status": "game stopped and all data cleared"}
+
 
 # , include_in_schema=False
 @app.get("/admin/restart")
 def restart_game(_: str = Depends(verify_admin_token)):
+    global cleanup_enabled
+    cleanup_enabled = True
     with lock:
         entities.clear()
         entity_last_action.clear()
         generate_world()
         print_board()
     return {"status": "game restarted"}
+
 
 # , include_in_schema=False
 @app.get("/admin/world")
@@ -389,13 +405,13 @@ def admin_world(_: str = Depends(verify_admin_token)):
         "spiders": list(spider_positions),
         "mountains": list(mountain_positions),
         "entities": {
-            key: {"x": e.x, "y": e.y, "race": e.race, "score": e.score}
+            key: {"x": e.x, "y": e.y, "name": e.name, "emoji": e.emoji, "score": e.score}
             for key, e in entities.items()
         },
     }
 
 def print_board():
-    print("\n=== WORLD MAP ===")
+    logger.info("\n=== WORLD MAP ===")
     board = [['.' for _ in range(WORLD_SIZE)] for _ in range(WORLD_SIZE)]
 
     for (x, y) in mountain_positions:
@@ -409,9 +425,9 @@ def print_board():
 
     for e in entities.values():
         x, y = e.x, e.y
-        board[y][x] = 'E' if e.race == 'ELF' else 'O'
+        board[y][x] = e.emoji
 
     for row in reversed(board):
-        print(' '.join(row))
-    print(f"Gold: {len(gold_positions)}, Spiders: {len(spider_positions)}, Mountains: {len(mountain_positions)}, Players: {len(entities)}")
-    print("=================\n")
+        logger.info(' '.join(row))
+    logger.info(f"Gold: {len(gold_positions)}, Spiders: {len(spider_positions)}, Mountains: {len(mountain_positions)}, Players: {len(entities)}")
+    logger.info("=================\n")
