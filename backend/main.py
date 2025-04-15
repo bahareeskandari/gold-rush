@@ -345,11 +345,27 @@ def walk(request: WalkRequest):
     return {"x": entity.x, "y": entity.y, "score": entity.score}
 
 
-@app.get("/score", summary="Get player score", description="Example: `/score?entityKey=1234567890`")
+@app.get("/score", summary="Get player info", description="Returns gold, position, emoji and name")
 def score(entityKey: str):
     if not entityKey or entityKey not in entities:
         raise HTTPException(status_code=400, detail="Invalid entity key")
-    return {"gold": entities[entityKey].score, }
+
+    entity = entities[entityKey]
+
+    # Compute leaderboard position
+    sorted_players = sorted(entities.values(), key=lambda e: e.score, reverse=True)
+    position = sorted_players.index(entity) + 1
+
+    def ordinal(n):
+        return f"{n}{'tsnrhtdd'[(n//10%10!=1)*(n%10<4)*n%10::4]}"
+
+    return {
+        "gold": entity.score,
+        "name": entity.name,
+        "coordinates": {"x": entity.x, "y": entity.y},
+        "emoji": entity.emoji,
+        "position": ordinal(position),
+    }
 
 
 # , include_in_schema=False

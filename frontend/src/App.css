@@ -43,3 +43,39 @@ button {
   font-size: 1rem;
   cursor: pointer;
 }
+.user-dashboard {
+  max-width: 400px;
+  margin: 3rem auto;
+  text-align: center;
+  font-family: sans-serif;
+  color: #333; /* 👈 ensures readable text */
+}
+
+.user-dashboard h2 {
+  color: #f0f0f0; /* or #fff for pure white */
+}
+
+.user-card {
+  background: #ffffff; /* or a very light gray: #fefefe */
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* softer shadow */
+  color: #222; /* 👈 good contrast */
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.logout-btn {
+  background: #eee;
+  color: #222;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #c8e5ff;
+}

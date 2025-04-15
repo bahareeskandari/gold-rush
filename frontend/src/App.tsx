@@ -3,6 +3,7 @@ import './App.css'
 import AdminView from './components/AdminView'
 import HackathonUserView from './components/HackathonUserView'
 import Login from './components/Login'
+import { UserData } from './model'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
 
@@ -10,7 +11,7 @@ function App() {
   const [adminPassword, setAdminPassword] = useState('')
   const [entityKey, setEntityKey] = useState('')
   const [world, setWorld] = useState(null)
-  const [gold, setGold] = useState<number | null>(null)
+  const [userData, setUserData] = useState<UserData | null>(null)
   const [checkingEntityId, setCheckingEntityId] = useState(true)
 
   const mode = adminPassword ? 'admin' : entityKey ? 'user' : null
@@ -28,9 +29,10 @@ function App() {
       try {
         const res = await fetch(`${BACKEND_URL}/score?entityKey=${fromQuery}`)
         if (!res.ok) throw new Error('Invalid or expired entityId')
-        const data = await res.json()
+        const userData: UserData = await res.json()
+
         setEntityKey(fromQuery)
-        setGold(data.gold)
+        setUserData(userData)
       } catch (err) {
         console.warn('Auto-login failed:', err)
       } finally {
@@ -70,8 +72,8 @@ function App() {
         try {
           const res = await fetch(`${BACKEND_URL}/score?entityKey=${entityKey}`)
           if (!res.ok) throw new Error('Failed to fetch status')
-          const data = await res.json()
-          setGold(data.gold)
+          const userData = await res.json()
+          setUserData(userData)
         } catch (err) {
           console.error('Score fetch error:', err)
         }
@@ -87,7 +89,7 @@ function App() {
     setAdminPassword('')
     setEntityKey('')
     setWorld(null)
-    setGold(null)
+    setUserData(null)
   }
 
   // Wait for query string check before showing login
@@ -109,7 +111,7 @@ function App() {
   if (mode === 'user') {
     return (
       <HackathonUserView
-        gold={gold}
+        userData={userData}
         entityKey={entityKey}
         onLogout={handleLogout}
       />
