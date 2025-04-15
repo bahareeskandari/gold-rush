@@ -1,7 +1,7 @@
 import random
 import threading
 import time
-from fastapi import FastAPI, HTTPException, WebSocket, Request, Query, Depends, Header
+from fastapi import FastAPI, HTTPException, WebSocket, Request, Query, Depends, Header, Security
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from enum import Enum
@@ -12,12 +12,14 @@ from contextlib import asynccontextmanager
 import logging
 import json
 from datetime import datetime, timezone
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 LOG_FILE = "/data/game_log.jsonl"
 
-logger = logging.getLogger("Gold Rush")  # Creates a named logger instance
-logging.basicConfig(level=logging.INFO)  # Sets default config: level, output to stdout
+security = HTTPBearer(auto_error=True)
 
+logger = logging.getLogger("Gold Rush")
+logging.basicConfig(level=logging.INFO)
 
 cleanup_enabled = True
 
@@ -32,10 +34,15 @@ async def lifespan(app: FastAPI):
     generate_world()
     print_board()
     start_cleanup_thread()
-    yield  # server runs while yielding
-    # (optional shutdown code can go here)
+    yield
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    swagger_ui_parameters={"docExpansion": "none"},
+    openapi_tags=[{"name": "Admin", "description": "Admin-only endpoints"}],
+    title="Gold Rush",
+    description="Backend API for Mirkwood Explorer",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,8 +53,7 @@ app.add_middleware(
 )
 
 WORLD_SIZE = 20
-ENTITY_TIMEOUT = 3000  # seconds
-
+ENTITY_TIMEOUT = 3000
 
 entities = {}
 gold_positions = set()
@@ -62,7 +68,7 @@ class RegisterRequest(BaseModel):
     emoji: str
 
 class AdminRequest(BaseModel):
-    admin_password: str    
+    admin_password: str
 
 class EntityKeyPayload(BaseModel):
     entityKey: str
@@ -81,7 +87,7 @@ class Entity:
         self.x = x
         self.y = y
         self.name = name
-        self.emoji= emoji
+        self.emoji = emoji
         self.score = 0
 
     def pos(self):
@@ -197,21 +203,17 @@ def start_cleanup_thread():
     t.start()
 
 
-def verify_admin_token(authorization: str = Header(...)):
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid token")
-    
-    token = authorization.removeprefix("Bearer ").strip()
+
+def verify_admin_token(credentials: HTTPAuthorizationCredentials = Security(security)):
+    token = credentials.credentials
     if token != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="Invalid admin token")
 
 
-
-
-def log_board_state(trigger: str):
+def log_board_state(action: str, entity_key: str):
     board_snapshot = {
         "timestamp": datetime.now(timezone.utc).isoformat(),  # <- updated here
-        "trigger": trigger,
+        "trigger": action,
         "board": {
             "gold": list(gold_positions),
             "spiders": list(spider_positions),
@@ -273,8 +275,11 @@ def register(request: RegisterRequest):
         entity_key = str(random.getrandbits(64))
         entities[entity_key] = Entity(x, y, request.name, request.emoji)
         entity_last_action[entity_key] = time.time()
+        
+        log_board_state(action="register", entity_key=entity_key)
 
         return {"entityKey": entity_key, "name": request.name, "emoji": request.emoji, "x": x, "y": y}
+        
 
 @app.get(
     "/look",
@@ -327,6 +332,7 @@ def look(entityKey: str):
         "visual": visual_board
     }
 
+
 @app.post("/walk")
 def walk(request: WalkRequest):
     entity_key = request.entityKey
@@ -355,10 +361,16 @@ def walk(request: WalkRequest):
     new_y = entity.y + dy
     new_pos = (new_x, new_y)
 
+    moved = False
+
     if 0 <= new_x < WORLD_SIZE and 0 <= new_y < WORLD_SIZE:
         if new_pos not in mountain_positions and all(e.pos() != new_pos for e in entities.values()):
             entity.x = new_x
             entity.y = new_y
+            moved = True
+
+    if moved:
+        log_board_state(action="move", entity_key=entity_key)
 
     # 🪙 Auto-pickup gold if standing on it
     with lock:
@@ -367,8 +379,9 @@ def walk(request: WalkRequest):
             gold_positions.remove(pos)
             entity.score += 1
             logger.info(f"{entity.name} ({entity.emoji}) picked up gold at {pos}")
+            log_board_state(action="pickup", entity_key=entity_key)
 
-    # 🕷️ Thread-safe teleport if near spider
+    # 🕷️ Teleport if adjacent to spider
     if any(abs(entity.x - x) <= 1 and abs(entity.y - y) <= 1 for (x, y) in spider_positions):
         with lock:
             while True:
@@ -386,6 +399,7 @@ def walk(request: WalkRequest):
                     entity.y = y
                     entity.score = max(0, entity.score - 1)
                     logger.info(f"{entity.name} ({entity.emoji}) got teleported due to spider. New position: {new_pos}")
+                    log_board_state(action="teleport", entity_key=entity_key)
                     break
 
     return {"x": entity.x, "y": entity.y, "score": entity.score}
@@ -415,8 +429,9 @@ def score(entityKey: str):
 
 
 # , include_in_schema=False
-@app.get("/leaderboard")
-def leaderboard(_: str = Depends(verify_admin_token)):
+@app.get("/leaderboard", tags=["Admin"])
+def leaderboard(credentials: HTTPAuthorizationCredentials = Security(security)):
+    verify_admin_token(credentials)
     board = [
         {"entityKey": key, "name": e.name, "emoji": e.emoji, "score": e.score}
         for key, e in entities.items()
@@ -424,9 +439,34 @@ def leaderboard(_: str = Depends(verify_admin_token)):
     board.sort(key=lambda x: x["score"], reverse=True)
     return {"leaderboard": board}
 
-# , include_in_schema=False
-@app.get("/admin/stop")
-def stop_game(_: str = Depends(verify_admin_token)):
+@app.get("/admin/world", tags=["Admin"])
+def admin_world(credentials: HTTPAuthorizationCredentials = Security(security)):
+    verify_admin_token(credentials)
+    return {
+        "gold": list(gold_positions),
+        "spiders": list(spider_positions),
+        "mountains": list(mountain_positions),
+        "entities": {
+            key: {"x": e.x, "y": e.y, "name": e.name, "emoji": e.emoji, "score": e.score}
+            for key, e in entities.items()
+        },
+    }
+
+@app.get("/admin/restart", tags=["Admin"])
+def restart_game(credentials: HTTPAuthorizationCredentials = Security(security)):
+    verify_admin_token(credentials)
+    global cleanup_enabled
+    cleanup_enabled = True
+    with lock:
+        entities.clear()
+        entity_last_action.clear()
+        generate_world()
+        print_board()
+    return {"status": "game restarted"}
+
+@app.get("/admin/stop", tags=["Admin"])
+def stop_game(credentials: HTTPAuthorizationCredentials = Security(security)):
+    verify_admin_token(credentials)
     global cleanup_enabled
     cleanup_enabled = False
     with lock:
@@ -438,32 +478,11 @@ def stop_game(_: str = Depends(verify_admin_token)):
     logger.info("=== GAME STOPPED ===")
     return {"status": "game stopped and all data cleared"}
 
-
-# , include_in_schema=False
-@app.get("/admin/restart")
-def restart_game(_: str = Depends(verify_admin_token)):
-    global cleanup_enabled
-    cleanup_enabled = True
-    with lock:
-        entities.clear()
-        entity_last_action.clear()
-        generate_world()
-        print_board()
-    return {"status": "game restarted"}
-
-
-# , include_in_schema=False
-@app.get("/admin/world")
-def admin_world(_: str = Depends(verify_admin_token)):
-    return {
-        "gold": list(gold_positions),
-        "spiders": list(spider_positions),
-        "mountains": list(mountain_positions),
-        "entities": {
-            key: {"x": e.x, "y": e.y, "name": e.name, "emoji": e.emoji, "score": e.score}
-            for key, e in entities.items()
-        },
-    }
+@app.post("/admin/clear-log", tags=["Admin"])
+def admin_clear_log(credentials: HTTPAuthorizationCredentials = Security(security)):
+    verify_admin_token(credentials)
+    clear_log_file()
+    return {"status": "log file cleared"}
 
 def print_board():
     logger.info("\n=== WORLD MAP ===")
