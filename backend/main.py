@@ -10,6 +10,10 @@ from dotenv import load_dotenv
 import asyncio
 from contextlib import asynccontextmanager
 import logging
+import json
+from datetime import datetime, timezone
+
+LOG_FILE = "/data/game_log.jsonl"
 
 logger = logging.getLogger("Gold Rush")  # Creates a named logger instance
 logging.basicConfig(level=logging.INFO)  # Sets default config: level, output to stdout
@@ -202,9 +206,51 @@ def verify_admin_token(authorization: str = Header(...)):
         raise HTTPException(status_code=403, detail="Invalid admin token")
 
 
+
+
+def log_board_state(trigger: str):
+    board_snapshot = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),  # <- updated here
+        "trigger": trigger,
+        "board": {
+            "gold": list(gold_positions),
+            "spiders": list(spider_positions),
+            "mountains": list(mountain_positions),
+            "entities": {
+                k: {
+                    "x": e.x,
+                    "y": e.y,
+                    "name": e.name,
+                    "emoji": e.emoji,
+                    "score": e.score
+                }
+                for k, e in entities.items()
+            }
+        }
+    }
+
+    try:
+        with open(LOG_FILE, "a") as f:
+            f.write(json.dumps(board_snapshot) + "\n")
+    except Exception as e:
+        logger.warning(f"Failed to write board log: {e}")
+
+def clear_log_file():
+    try:
+        with open(LOG_FILE, "w") as f:
+            f.truncate(0)
+        logger.info("✅ Log file cleared.")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to clear log file: {e}")
+
 @app.get("/", include_in_schema=False)
 def root():
     return {"status": "Server is running"}
+
+@app.post("/admin/clear-log")
+def admin_clear_log(_: str = Depends(verify_admin_token)):
+    clear_log_file()
+    return {"status": "log file cleared"}
 
 @app.post("/register")
 def register(request: RegisterRequest):
