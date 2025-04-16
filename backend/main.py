@@ -14,7 +14,7 @@ import json
 from datetime import datetime, timezone
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-LOG_FILE = "game_log.jsonl"  # "/data/game_log.jsonl"
+LOG_FILE = "/data/game_log.jsonl" # "game_log.jsonl"  
 
 security = HTTPBearer(auto_error=True)
 
@@ -155,8 +155,8 @@ def generate_world():
 
     def get_random_free_tile():
         while True:
-            x = random.randint(1, WORLD_SIZE - 2)
-            y = random.randint(1, WORLD_SIZE - 2)
+            x = random.randint(0, WORLD_SIZE - 1)
+            y = random.randint(0, WORLD_SIZE - 1)
             tile = (x, y)
             if (
                 tile not in gold_positions
@@ -381,8 +381,8 @@ def walk(request: WalkRequest):
     if any(abs(entity.x - x) <= 1 and abs(entity.y - y) <= 1 for (x, y) in spider_positions):
         with lock:
             while True:
-                x = random.randint(1, WORLD_SIZE - 2)
-                y = random.randint(1, WORLD_SIZE - 2)
+                x = random.randint(0, WORLD_SIZE - 1)
+                y = random.randint(0, WORLD_SIZE - 1)
                 new_pos = (x, y)
                 if (
                     new_pos not in mountain_positions
