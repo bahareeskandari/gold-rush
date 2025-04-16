@@ -41,7 +41,7 @@ app = FastAPI(
     swagger_ui_parameters={"docExpansion": "none"},
     openapi_tags=[{"name": "Admin", "description": "Admin-only endpoints"}],
     title="Gold Rush",
-    description="Backend API for Mirkwood Explorer",
+    description="Backend API for Gold Rush",
 )
 
 app.add_middleware(
@@ -423,29 +423,21 @@ def score(entityKey: str):
         "position": ordinal(position),
     }
 
-
-# , include_in_schema=False
-@app.get("/leaderboard", tags=["Admin"])
-def leaderboard(credentials: HTTPAuthorizationCredentials = Security(security)):
-    verify_admin_token(credentials)
-    board = [
-        {"entityKey": key, "name": e.name, "emoji": e.emoji, "score": e.score}
-        for key, e in entities.items()
-    ]
-    board.sort(key=lambda x: x["score"], reverse=True)
-    return {"leaderboard": board}
-
+ 
 @app.get("/admin/world", tags=["Admin"])
 def admin_world(credentials: HTTPAuthorizationCredentials = Security(security)):
     verify_admin_token(credentials)
+    leaderboard = [
+        {"entityKey": key, "name": e.name, "emoji": e.emoji, "score": e.score, "x": e.x, "y": e.y,}
+        for key, e in entities.items()
+    ]
+    leaderboard.sort(key=lambda x: x["score"], reverse=True)
+    
     return {
         "gold": list(gold_positions),
         "spiders": list(spider_positions),
         "mountains": list(mountain_positions),
-        "entities": {
-            key: {"x": e.x, "y": e.y, "name": e.name, "emoji": e.emoji, "score": e.score}
-            for key, e in entities.items()
-        },
+        "leaderboard": leaderboard,
     }
 
 @app.get("/admin/restart", tags=["Admin"])
