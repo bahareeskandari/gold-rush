@@ -30,11 +30,25 @@ export default function HackathonUserView({
           <strong>Gold:</strong> {userData.gold}
         </p>
         <p>
+          <strong>Theft:</strong> {userData.theft}
+          {userData.theft < -3 && ' 🥴'}
+          {userData.theft < 0 && userData.theft >= -3 && ' 😬'}
+          {userData.theft === 0 && ' 😐'}
+          {userData.theft > 0 && userData.theft <= 3 && ' 😎'}
+          {userData.theft > 3 && ' 🥷'}
+        </p>
+        <p>
           <strong>Coordinates:</strong> ({userData.coordinates.x},{' '}
           {userData.coordinates.y})
         </p>
         <p>
-          <strong>Leaderboard Position:</strong> {userData.position}
+          <strong>Leaderboard Position:</strong> {userData.position}{' '}
+          {userData.position === '1st' && ' 🏆'}
+          {userData.position === '2nd' && ' 🥈'}
+          {userData.position === '3rd' && ' 🥉'}
+        </p>
+        <p>
+          <strong>Gold left to pick up:</strong> {userData.totalGoldInGame}
         </p>
         <p style={{ fontSize: '0.85rem', color: '#888' }}>
           Entity ID: {entityKey}

@@ -89,6 +89,7 @@ class Entity:
         self.name = name
         self.emoji = emoji
         self.score = 0
+        self.theft = 0
 
     def pos(self):
         return (self.x, self.y)
@@ -329,7 +330,16 @@ def look(entityKey: str):
     }
 
 
-@app.post("/walk")
+@app.post(
+    "/walk",
+    summary="Move your entity (N)orth, (S)outh, (E)ast or (W)est",
+    description="""
+- You **cannot** move outside the board or onto a **mountain** tile.
+- If you try to move **onto a spider**, you will be **teleported** to a random location.
+- If you try to move **onto a competitor**, you will attempt to **steal gold** from them.
+- If you move onto **gold**, it is automatically picked up.
+"""
+)
 def walk(request: WalkRequest):
     entity_key = request.entityKey
     if not entity_key or entity_key not in entities:
@@ -360,13 +370,43 @@ def walk(request: WalkRequest):
     moved = False
 
     if 0 <= new_x < WORLD_SIZE and 0 <= new_y < WORLD_SIZE:
-        if new_pos not in mountain_positions and all(e.pos() != new_pos for e in entities.values()):
-            entity.x = new_x
-            entity.y = new_y
-            moved = True
-
-    if moved:
-        log_board_state(action="move", entity_key=entity_key)
+        if new_pos not in mountain_positions:
+            # 🕷️ Spider check first
+            if new_pos in spider_positions:
+                # Trigger teleport instead of moving
+                with lock:
+                    while True:
+                        x = random.randint(0, WORLD_SIZE - 1)
+                        y = random.randint(0, WORLD_SIZE - 1)
+                        new_pos = (x, y)
+                        if (
+                            new_pos not in mountain_positions
+                            and new_pos not in gold_positions
+                            and new_pos not in spider_positions
+                            and all(e.pos() != new_pos for e in entities.values())
+                        ):
+                            entity.x = x
+                            entity.y = y
+                            entity.score = max(0, entity.score - 1)
+                            logger.info(f"{entity.name} ({entity.emoji}) tried to enter a spider tile and got teleported to {new_pos}")
+                            log_board_state(action="spider-teleport", entity_key=entity_key)
+                            break
+            else:
+                # Check if another player is on the target square
+                blocking_entity = next((e for k, e in entities.items() if k != entity_key and e.pos() == new_pos), None)
+                if blocking_entity:
+                    if blocking_entity.score > 0:
+                        entity.score += 1
+                        entity.theft += 1
+                        blocking_entity.score -= 1
+                        blocking_entity.theft -= 1
+                        logger.info(f"{entity.name} stole from {blocking_entity.name} at {new_pos}")
+                        log_board_state(action="theft", entity_key=entity_key)
+                else:
+                    entity.x = new_x
+                    entity.y = new_y
+                    moved = True
+                    log_board_state(action="move", entity_key=entity_key)
 
     # 🪙 Auto-pickup gold if standing on it
     with lock:
@@ -376,27 +416,6 @@ def walk(request: WalkRequest):
             entity.score += 1
             logger.info(f"{entity.name} ({entity.emoji}) picked up gold at {pos}")
             log_board_state(action="pickup", entity_key=entity_key)
-
-    # 🕷️ Teleport if adjacent to spider
-    if any(abs(entity.x - x) <= 1 and abs(entity.y - y) <= 1 for (x, y) in spider_positions):
-        with lock:
-            while True:
-                x = random.randint(0, WORLD_SIZE - 1)
-                y = random.randint(0, WORLD_SIZE - 1)
-                new_pos = (x, y)
-                if (
-                    new_pos not in mountain_positions
-                    and new_pos not in gold_positions
-                    and new_pos not in spider_positions
-                    and not is_adjacent_to_spider(x, y)
-                    and all(e.pos() != new_pos for e in entities.values())
-                ):
-                    entity.x = x
-                    entity.y = y
-                    entity.score = max(0, entity.score - 1)
-                    logger.info(f"{entity.name} ({entity.emoji}) got teleported due to spider. New position: {new_pos}")
-                    log_board_state(action="teleport", entity_key=entity_key)
-                    break
 
     return {"x": entity.x, "y": entity.y, "score": entity.score}
 
@@ -408,21 +427,24 @@ def score(entityKey: str):
 
     entity = entities[entityKey]
 
-    # Compute leaderboard position
+    # Leaderboard position
     sorted_players = sorted(entities.values(), key=lambda e: e.score, reverse=True)
     position = sorted_players.index(entity) + 1
 
     def ordinal(n):
         return f"{n}{'tsnrhtdd'[(n//10%10!=1)*(n%10<4)*n%10::4]}"
 
+    total_gold = len(gold_positions)
+
     return {
         "gold": entity.score,
+        "theft": entity.theft,
         "name": entity.name,
         "coordinates": {"x": entity.x, "y": entity.y},
         "emoji": entity.emoji,
         "position": ordinal(position),
+        "totalGoldInGame": total_gold,
     }
-
 
 # , include_in_schema=False
 @app.get("/leaderboard", tags=["Admin"])

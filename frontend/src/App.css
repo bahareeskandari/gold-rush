@@ -56,13 +56,13 @@ button {
 }
 
 .user-card {
-  background: #ffffff; /* or a very light gray: #fefefe */
+  background: #ffffff;
   border: 1px solid #ddd;
   border-radius: 10px;
   padding: 1.5rem;
   margin: 1.5rem 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* softer shadow */
-  color: #222; /* 👈 good contrast */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  color: #222;
   font-size: 1rem;
   line-height: 1.5;
 }
