@@ -14,7 +14,7 @@ import json
 from datetime import datetime, timezone
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-LOG_FILE = "/data/game_log.jsonl"
+LOG_FILE = "game_log.jsonl"  # "/data/game_log.jsonl"
 
 security = HTTPBearer(auto_error=True)
 
@@ -93,9 +93,6 @@ class Entity:
     def pos(self):
         return (self.x, self.y)
 
-def is_safe_tile(x, y):
-    return 1 <= x < WORLD_SIZE - 1 and 1 <= y < WORLD_SIZE - 1
-
 def generate_mountain_chunks(num_chunks=6, max_chunk_size=10):
     shapes = ['line', 'square', 'L', 'blob']
     positions = set()
@@ -139,7 +136,6 @@ def generate_mountain_chunks(num_chunks=6, max_chunk_size=10):
         valid_chunk = {
             pos for pos in chunk
             if (
-                is_safe_tile(*pos) and
                 0 <= pos[0] < WORLD_SIZE and 0 <= pos[1] < WORLD_SIZE and
                 pos not in gold_positions and
                 pos not in spider_positions and
