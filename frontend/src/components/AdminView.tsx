@@ -11,6 +11,7 @@ type World = {
   gold: number[][];
   spiders: number[][];
   mountains: number[][];
+  leaderboard: Entity[];
 };
 
 type Props = {
@@ -22,6 +23,7 @@ type Entity = {
   entityKey: string;
   name: string;
   emoji: string;
+  score: string;
   x: number;
   y: number;
 };
@@ -30,8 +32,8 @@ const WORLD_SIZE = 20;
 
 export default function AdminView({ world, onLogout }: Props) {
   const renderCell = (x: number, y: number) => {
-    const entity = (Object.values(world.entities) as Entity[]).find(
-      (e) => e.x === x && e.y === y
+    const entity = world.leaderboard.find(
+      (entityItem: Entity) => entityItem.x === x && entityItem.y === y
     );
     if (entity) return entity.emoji || "❓";
 
@@ -46,7 +48,21 @@ export default function AdminView({ world, onLogout }: Props) {
   };
 
   return (
-    <>
+    <div className="game-container">
+      <div className="scoreboard">
+        <h2>🏆 Leaderboard</h2>
+        <ul>
+          {world.leaderboard.map((player: Entity, i: number) => (
+            <li key={player.entityKey} className="scoreboard-entry">
+              <span>
+                {i + 1}. {player.name} {player.emoji}
+              </span>
+              <span>{player.score}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="board">
         <div style={{ marginBottom: "1rem" }}>
           🪙 = Gold &nbsp; ⛰️ = Mountain &nbsp; 🕷️ = Spider
@@ -68,6 +84,6 @@ export default function AdminView({ world, onLogout }: Props) {
       <div className="logout-container">
         <button onClick={onLogout}>Logout</button>
       </div>
-    </>
+    </div>
   );
 }
