@@ -1,7 +1,7 @@
 const TILE_EMOJI = {
-  gold: "🪙",
+  gold: "💰",
   spider: "🕷️",
-  mountain: "⛰️",
+  mountain: "⛔️",
   player: "🧝",
   ORC: "🧟",
 };
@@ -17,6 +17,9 @@ type World = {
 type Props = {
   world: World;
   onLogout: () => void;
+  getLogs: () => void;
+  replaying: boolean;
+  setReplaying: (val: boolean) => void;
 };
 
 type Entity = {
@@ -30,7 +33,14 @@ type Entity = {
 
 const WORLD_SIZE = 20;
 
-export default function AdminView({ world, onLogout }: Props) {
+export default function AdminView({
+  world,
+  onLogout,
+  getLogs,
+  replaying,
+  setReplaying,
+}: Props) {
+  console.log("world", world);
   const renderCell = (x: number, y: number) => {
     const entity = world.leaderboard.find(
       (entityItem: Entity) => entityItem.x === x && entityItem.y === y
@@ -64,9 +74,13 @@ export default function AdminView({ world, onLogout }: Props) {
       </div>
 
       <div className="board">
-        <div style={{ marginBottom: "1rem" }}>
-          🪙 = Gold &nbsp; ⛰️ = Mountain &nbsp; 🕷️ = Spider
+        <div className="button-row">
+          <button onClick={() => setReplaying(!replaying)}>
+            {replaying ? "▶️ Resume Updates" : "⏸️ Pause Updates"}
+          </button>
+          <button onClick={() => getLogs()}>▶️ Play summary of game</button>
         </div>
+
         {Array.from({ length: WORLD_SIZE }).map((_, row) => (
           <div className="row" key={row}>
             {Array.from({ length: WORLD_SIZE }).map((_, col) => {
@@ -80,9 +94,9 @@ export default function AdminView({ world, onLogout }: Props) {
             })}
           </div>
         ))}
-      </div>
-      <div className="logout-container">
-        <button onClick={onLogout}>Logout</button>
+        <div className="logout-container">
+          <button onClick={onLogout}>Logout</button>
+        </div>
       </div>
     </div>
   );

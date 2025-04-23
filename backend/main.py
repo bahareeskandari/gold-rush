@@ -208,6 +208,11 @@ def verify_admin_token(credentials: HTTPAuthorizationCredentials = Security(secu
 
 
 def log_board_state(action: str, entity_key: str):
+    leaderboard = [
+        {"entityKey": key, "name": e.name, "emoji": e.emoji, "score": e.score, "x": e.x, "y": e.y,}
+        for key, e in entities.items()
+    ]
+    leaderboard.sort(key=lambda x: x["score"], reverse=True)
     board_snapshot = {
         "timestamp": datetime.now(timezone.utc).isoformat(),  # <- updated here
         "trigger": action,
@@ -215,16 +220,8 @@ def log_board_state(action: str, entity_key: str):
             "gold": list(gold_positions),
             "spiders": list(spider_positions),
             "mountains": list(mountain_positions),
-            "entities": {
-                k: {
-                    "x": e.x,
-                    "y": e.y,
-                    "name": e.name,
-                    "emoji": e.emoji,
-                    "score": e.score
-                }
-                for k, e in entities.items()
-            }
+            "leaderboard": leaderboard,
+            "totalGoldInGame": len(gold_positions),
         }
     }
 
@@ -495,6 +492,18 @@ def admin_clear_log(credentials: HTTPAuthorizationCredentials = Security(securit
     clear_log_file()
     return {"status": "log file cleared"}
 
+@app.get("/admin/logs", tags=["Admin"])
+def get_logs(credentials: HTTPAuthorizationCredentials = Security(security)):
+    verify_admin_token(credentials)
+    try:
+        with open(LOG_FILE, "r") as f:
+            return [json.loads(line) for line in f.readlines()]
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Log file not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read log file: {e}")
+    
+    
 def print_board():
     logger.info("\n=== WORLD MAP ===")
     board = [['.' for _ in range(WORLD_SIZE)] for _ in range(WORLD_SIZE)]

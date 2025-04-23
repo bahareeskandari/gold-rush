@@ -5,10 +5,12 @@ import HackathonUserView from "./components/HackathonUserView";
 import Login from "./components/Login";
 import { UserData } from "./model";
 
-const BACKEND_URL = "http://localhost:8000";
+export const BACKEND_URL = "http://localhost:8000";
 
 function App() {
   const [adminPassword, setAdminPassword] = useState("");
+  const [replaying, setReplaying] = useState(false);
+
   const [entityKey, setEntityKey] = useState("");
   const [world, setWorld] = useState(null);
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -44,7 +46,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (mode === "admin") {
+    if (mode === "admin" && !replaying) {
       const fetchBoard = async () => {
         try {
           const res = await fetch(`${BACKEND_URL}/admin/world`, {
@@ -64,7 +66,7 @@ function App() {
       const interval = setInterval(fetchBoard, 1000);
       return () => clearInterval(interval);
     }
-  }, [adminPassword]);
+  }, [adminPassword, replaying]); // <== add replaying to deps
 
   useEffect(() => {
     if (mode === "user") {
@@ -95,6 +97,34 @@ function App() {
     setWorld(null);
     setUserData(null);
   };
+  const getLogs = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/admin/logs`, {
+        headers: {
+          Authorization: `Bearer ${adminPassword}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to fetch logs");
+      const logs = await res.json();
+
+      setReplaying(true); // stop live updates
+
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= logs.length) {
+          clearInterval(interval);
+          console.log("Replay finished.");
+          return;
+        }
+
+        const snapshot = logs[i];
+        setWorld(snapshot.board); // <-- this is the key
+        i++;
+      }, 300); // ~3 fps replay
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+  };
 
   // Wait for query string check before showing login
   if (checkingEntityId)
@@ -110,7 +140,15 @@ function App() {
   }
 
   if (mode === "admin" && world) {
-    return <AdminView world={world} onLogout={handleLogout} />;
+    return (
+      <AdminView
+        world={world}
+        onLogout={handleLogout}
+        getLogs={getLogs}
+        replaying={replaying}
+        setReplaying={setReplaying}
+      />
+    );
   }
 
   if (mode === "user") {
