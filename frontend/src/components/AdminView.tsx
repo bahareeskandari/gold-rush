@@ -1,9 +1,11 @@
+import React from "react";
+
 const TILE_EMOJI = {
   gold: "💰",
   spider: "🕷️",
   mountain: "⛔️",
-  player: "🧝",
-  ORC: "🧟",
+  player: "👝",
+  ORC: "🦟",
 };
 
 type World = {
@@ -31,7 +33,7 @@ type Entity = {
   y: number;
 };
 
-const WORLD_SIZE = 20;
+const WORLD_SIZE = 40;
 
 export default function AdminView({
   world,
@@ -40,25 +42,42 @@ export default function AdminView({
   replaying,
   setReplaying,
 }: Props) {
-  console.log("world", world);
   const renderCell = (x: number, y: number) => {
-    const entity = world.leaderboard.find(
-      (entityItem: Entity) => entityItem.x === x && entityItem.y === y
+    const playerHere = world.leaderboard.some((p) => p.x === x && p.y === y);
+    const isGoldTile = world.gold.some(([gx, gy]) => gx === x && gy === y);
+    const isMountain = world.mountains.some(([mx, my]) => mx === x && my === y);
+    const playerAdjacent = world.leaderboard.some(
+      (p) => Math.abs(p.x - x) + Math.abs(p.y - y) === 1
     );
-    if (entity) return entity.emoji || "❓";
 
-    if (world.gold.some(([gx, gy]: number[]) => gx === x && gy === y))
-      return TILE_EMOJI.gold;
-    if (world.spiders.some(([sx, sy]: number[]) => sx === x && sy === y))
-      return TILE_EMOJI.spider;
-    if (world.mountains.some(([mx, my]: number[]) => mx === x && my === y))
-      return TILE_EMOJI.mountain;
+    const goldPickup = isGoldTile && playerHere;
+    const bumpBlocked = isMountain && playerAdjacent;
 
-    return "";
+    const tileClasses = [
+      "tile",
+      goldPickup ? "gold-pickup" : "",
+      playerHere ? "player-moved" : "",
+      bumpBlocked ? "bump-blocked" : "",
+    ]
+      .join(" ")
+      .trim();
+
+    const entity = world.leaderboard.find((p) => p.x === x && p.y === y);
+    if (entity) {
+      return <div className={tileClasses}>{entity.emoji || "❓"}</div>;
+    }
+
+    if (isGoldTile) return <div className={tileClasses}>{TILE_EMOJI.gold}</div>;
+    if (world.spiders.some(([sx, sy]) => sx === x && sy === y))
+      return <div className={tileClasses}>{TILE_EMOJI.spider}</div>;
+    if (isMountain)
+      return <div className={tileClasses}>{TILE_EMOJI.mountain}</div>;
+
+    return <div className={tileClasses}></div>;
   };
 
   return (
-    <div className="game-container">
+    <div className="app">
       <div className="scoreboard">
         <h2>🏆 Leaderboard</h2>
         <ul>
@@ -67,33 +86,31 @@ export default function AdminView({
               <span>
                 {i + 1}. {player.name} {player.emoji}
               </span>
-              <span>{player.score}</span>
+              <span>{player.score} 💰</span>
             </li>
           ))}
         </ul>
       </div>
 
-      <div className="board">
-        <div className="button-row">
+      <div className="board-content">
+        {Array.from({ length: WORLD_SIZE }).map((_, row) => (
+          <React.Fragment key={row}>
+            {Array.from({ length: WORLD_SIZE }).map((_, col) => {
+              const x = col;
+              const y = WORLD_SIZE - 1 - row;
+              return renderCell(x, y);
+            })}
+          </React.Fragment>
+        ))}
+      </div>
+
+      <div className="control-panel">
+        <div className="button-row vertical">
           <button onClick={() => setReplaying(!replaying)}>
             {replaying ? "▶️ Resume Updates" : "⏸️ Pause Updates"}
           </button>
           <button onClick={() => getLogs()}>▶️ Play summary of game</button>
         </div>
-
-        {Array.from({ length: WORLD_SIZE }).map((_, row) => (
-          <div className="row" key={row}>
-            {Array.from({ length: WORLD_SIZE }).map((_, col) => {
-              const x = col;
-              const y = WORLD_SIZE - 1 - row;
-              return (
-                <div className="tile" key={`${x}-${y}`}>
-                  {renderCell(x, y)}
-                </div>
-              );
-            })}
-          </div>
-        ))}
         <div className="logout-container">
           <button onClick={onLogout}>Logout</button>
         </div>
