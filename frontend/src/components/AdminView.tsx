@@ -4,8 +4,6 @@ const TILE_EMOJI = {
   gold: "💰",
   spider: "🕷️",
   mountain: "⛔️",
-  player: "👝",
-  ORC: "🦟",
 };
 
 type World = {
@@ -42,7 +40,7 @@ export default function AdminView({
   replaying,
   setReplaying,
 }: Props) {
-  const renderCell = (x: number, y: number) => {
+  const renderCell = (x: number, y: number, colIdx: number) => {
     const playerHere = world.leaderboard.some((p) => p.x === x && p.y === y);
     const isGoldTile = world.gold.some(([gx, gy]) => gx === x && gy === y);
     const isMountain = world.mountains.some(([mx, my]) => mx === x && my === y);
@@ -64,16 +62,33 @@ export default function AdminView({
 
     const entity = world.leaderboard.find((p) => p.x === x && p.y === y);
     if (entity) {
-      return <div className={tileClasses}>{entity.emoji || "❓"}</div>;
+      return (
+        <div key={colIdx} className={tileClasses}>
+          {entity.emoji || "❓"}
+        </div>
+      );
     }
 
-    if (isGoldTile) return <div className={tileClasses}>{TILE_EMOJI.gold}</div>;
+    if (isGoldTile)
+      return (
+        <div key={colIdx} className={tileClasses}>
+          {TILE_EMOJI.gold}
+        </div>
+      );
     if (world.spiders.some(([sx, sy]) => sx === x && sy === y))
-      return <div className={tileClasses}>{TILE_EMOJI.spider}</div>;
+      return (
+        <div key={colIdx} className={tileClasses}>
+          {TILE_EMOJI.spider}
+        </div>
+      );
     if (isMountain)
-      return <div className={tileClasses}>{TILE_EMOJI.mountain}</div>;
+      return (
+        <div key={colIdx} className={tileClasses}>
+          {TILE_EMOJI.mountain}
+        </div>
+      );
 
-    return <div className={tileClasses}></div>;
+    return <div key={colIdx} className={tileClasses}></div>;
   };
 
   return (
@@ -95,10 +110,10 @@ export default function AdminView({
       <div className="board-content">
         {Array.from({ length: WORLD_SIZE }).map((_, row) => (
           <React.Fragment key={row}>
-            {Array.from({ length: WORLD_SIZE }).map((_, col) => {
-              const x = col;
+            {Array.from({ length: WORLD_SIZE }).map((_, colIdx) => {
+              const x = colIdx;
               const y = WORLD_SIZE - 1 - row;
-              return renderCell(x, y);
+              return renderCell(x, y, colIdx);
             })}
           </React.Fragment>
         ))}
@@ -107,7 +122,7 @@ export default function AdminView({
       <div className="control-panel">
         <div className="button-row vertical">
           <button onClick={() => setReplaying(!replaying)}>
-            {replaying ? "▶️ Resume Updates" : "⏸️ Pause Updates"}
+            {replaying ? "▶️ Resume live updates" : "⏸️ Pause live updates"}
           </button>
           <button onClick={() => getLogs()}>▶️ Play summary of game</button>
         </div>

@@ -88,7 +88,7 @@ body, html, #root {
   width: 100%;
   height: 100%;
   aspect-ratio: 1 / 1;
-  font-size: 1.5vmin;
+  font-size: 2vmin;
   background-color: #fffacd;
   box-shadow: inset 0 0 0 1px #e0c060;
   display: flex;
