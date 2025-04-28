@@ -17,6 +17,7 @@ type World = {
 type Props = {
   world: World;
   onLogout: () => void;
+  clearLogs: () => void;
   getLogs: () => void;
   replaying: boolean;
   setReplaying: (val: boolean) => void;
@@ -37,6 +38,7 @@ export default function AdminView({
   world,
   onLogout,
   getLogs,
+  clearLogs,
   replaying,
   setReplaying,
 }: Props) {
@@ -127,7 +129,10 @@ export default function AdminView({
           <button onClick={() => getLogs()}>▶️ Play summary of game</button>
         </div>
         <div className="logout-container">
-          <button onClick={onLogout}>Logout</button>
+          <button onClick={clearLogs}>Clear logs</button>
+          <button className="logout-btn" onClick={onLogout}>
+            Logout
+          </button>
         </div>
       </div>
     </div>

@@ -126,6 +126,21 @@ function App() {
     }
   };
 
+  const clearLogs = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/admin/clear-log`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${adminPassword}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to clear logs");
+      console.log("Logs cleared successfully.");
+    } catch (err) {
+      console.error("Clear logs error:", err);
+    }
+  };
+
   // Wait for query string check before showing login
   if (checkingEntityId)
     return <p style={{ textAlign: "center" }}>Loading...</p>;
@@ -145,6 +160,7 @@ function App() {
         world={world}
         onLogout={handleLogout}
         getLogs={getLogs}
+        clearLogs={clearLogs}
         replaying={replaying}
         setReplaying={setReplaying}
       />
