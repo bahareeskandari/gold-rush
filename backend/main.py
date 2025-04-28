@@ -1,20 +1,19 @@
 import random
 import threading
 import time
-from fastapi import FastAPI, HTTPException, WebSocket, Request, Query, Depends, Header, Security
+from fastapi import FastAPI, HTTPException, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from enum import Enum
 import os
 from dotenv import load_dotenv
-import asyncio
 from contextlib import asynccontextmanager
 import logging
 import json
 from datetime import datetime, timezone
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-LOG_FILE = "game_log.jsonl" #   "/data/game_log.jsonl"
+LOG_FILE = "/data/game_log.jsonl" #"game_log.jsonl"   
 
 security = HTTPBearer(auto_error=True)
 
@@ -52,7 +51,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-WORLD_SIZE = 40
+WORLD_SIZE = 20
 ENTITY_TIMEOUT = 3000
 
 entities = {}
