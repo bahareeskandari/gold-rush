@@ -20,3 +20,5 @@ A grid-based multiplayer adventure game controlled entirely via a backend API. P
 #### Visit: https://gold-rush.fly.dev/
 
 # Backend deploy on Fly.io
+
+<img width="1523" alt="Screenshot 2025-04-29 at 09 39 54" src="https://github.com/user-attachments/assets/386702be-550d-4ebd-9cdf-0f9f3bfc4d77" />
