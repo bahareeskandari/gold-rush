@@ -115,6 +115,21 @@ Admin endpoints require `Authorization: Bearer <admin_password>` where the passw
   - Displays own score, theft count, and coordinates.
   - Does not show the global map or other players.
 
+## Deploy to Fly from your Machine:
+
+- Install the Fly CLI
+
+- Authenticate with Fly.io
+
+- Have Access to the Fly App (must be collaborator on the Fly app)
+
+- Clone the Git Repository (if you haven’t already), you need the repo with the fly.toml, Dockerfile, etc.
+
+### (Optional) To recreate Fly Volume, (e.g., fresh start)
+
+- fly volumes destroy game_data
+- fly volumes create game_data --region ams --size 1
+
 ## Notes
 
 - Board coordinates: `(0,0)` is bottom-left; `(19,19)` (or `(39,39)` if WORLD_SIZE=40) is top-right.
