@@ -13,7 +13,7 @@ import json
 from datetime import datetime, timezone
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-LOG_FILE = "/data/game_log.jsonl" #"game_log.jsonl"   
+LOG_FILE = "/data/game_log.jsonl" #"game_log.jsonl" in developement mode  
 
 security = HTTPBearer(auto_error=True)
 

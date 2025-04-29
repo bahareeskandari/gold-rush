@@ -5,7 +5,7 @@ import HackathonUserView from "./components/HackathonUserView";
 import Login from "./components/Login";
 import { UserData } from "./model";
 
-export const BACKEND_URL = "http://localhost:8000";
+export const VITE_BACKEND_URL = "https://gold-rush.fly.dev"; //"http://127.0.0.1:8000" in developement mode
 
 function App() {
   const [adminPassword, setAdminPassword] = useState("");
@@ -29,7 +29,9 @@ function App() {
 
     const tryEntity = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/score?entityKey=${fromQuery}`);
+        const res = await fetch(
+          `${VITE_BACKEND_URL}/score?entityKey=${fromQuery}`
+        );
         if (!res.ok) throw new Error("Invalid or expired entityId");
         const userData: UserData = await res.json();
 
@@ -49,7 +51,7 @@ function App() {
     if (mode === "admin" && !replaying) {
       const fetchBoard = async () => {
         try {
-          const res = await fetch(`${BACKEND_URL}/admin/world`, {
+          const res = await fetch(`${VITE_BACKEND_URL}/admin/world`, {
             headers: {
               Authorization: `Bearer ${adminPassword}`,
             },
@@ -73,7 +75,7 @@ function App() {
       const fetchStatus = async () => {
         try {
           const res = await fetch(
-            `${BACKEND_URL}/score?entityKey=${entityKey}`
+            `${VITE_BACKEND_URL}/score?entityKey=${entityKey}`
           );
           if (!res.ok) throw new Error("Failed to fetch status");
           console.log("await res", await res);
@@ -99,7 +101,7 @@ function App() {
   };
   const getLogs = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/logs`, {
+      const res = await fetch(`${VITE_BACKEND_URL}/admin/logs`, {
         headers: {
           Authorization: `Bearer ${adminPassword}`,
         },
@@ -128,7 +130,7 @@ function App() {
 
   const clearLogs = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/admin/clear-log`, {
+      const res = await fetch(`${VITE_BACKEND_URL}/admin/clear-log`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${adminPassword}`,
