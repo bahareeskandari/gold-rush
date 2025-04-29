@@ -247,6 +247,29 @@ def admin_clear_log(_: str = Depends(verify_admin_token)):
     clear_log_file()
     return {"status": "log file cleared"}
 
+
+@app.delete("/delete-player/{entityKey}", summary="Delete a player by entityKey")
+def delete_player(entityKey: str):
+    with lock:
+        if entityKey not in entities:
+            raise HTTPException(status_code=404, detail="Player not found")
+
+        entity = entities.pop(entityKey)
+        entity_last_action.pop(entityKey, None)
+
+        # Remove player-related positions from the game world
+        if (entity.x, entity.y) in gold_positions:
+            gold_positions.remove((entity.x, entity.y))
+        if (entity.x, entity.y) in spider_positions:
+            spider_positions.remove((entity.x, entity.y))
+
+        logger.info(f"Player {entity.name} ({entity.emoji}) has been deleted from the game.")
+
+        log_board_state(action="delete-player", entity_key=entityKey)
+
+    return {"status": "Player deleted", "entityKey": entityKey}
+
+
 @app.post("/register")
 def register(request: RegisterRequest):
     with lock:
