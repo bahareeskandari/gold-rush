@@ -1,4 +1,5 @@
 import React from "react";
+import GameInfoBoard from "./GameInfoBoard";
 
 const TILE_EMOJI = {
   gold: "💰",
@@ -111,7 +112,7 @@ export default function AdminView({
       </div>
 
       <div className="board-content">
-        {!hideBoard &&
+        {!hideBoard ? (
           Array.from({ length: WORLD_SIZE }).map((_, row) => (
             <React.Fragment key={row}>
               {Array.from({ length: WORLD_SIZE }).map((_, colIdx) => {
@@ -120,7 +121,10 @@ export default function AdminView({
                 return renderCell(x, y, colIdx);
               })}
             </React.Fragment>
-          ))}
+          ))
+        ) : (
+          <GameInfoBoard />
+        )}
       </div>
 
       <div className="control-panel">

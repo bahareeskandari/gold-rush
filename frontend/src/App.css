@@ -28,7 +28,7 @@ body, html, #root {
 .scoreboard {
   background: #f5f7fa; /* Lighter background for better contrast with dark UI */
   color: #111; /* Slightly darker text for readability */
-  border-radius: 20px;
+ 
   box-shadow: 0 6px 30px rgba(0, 0, 0, 0.25);
   padding: 2.5rem 2rem;
   display: flex;
@@ -175,7 +175,78 @@ button:hover {
   background: #636e72;
   transform: scale(1.03);
 }
-.clear-log-btn {
-  margin-left: 0.3rem;
-  margin-right: 0.3rem;
+.bottom-page-btns {
+  margin: 0.1rem;
+}
+
+
+
+/* === Board info === */
+.info-board {
+  background: #f8f8f8;
+  color: #333;
+  padding: 1rem;
+  width: 100vh;
+  height: 80vh;
+  margin: 1rem auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-board h1 {
+  font-size: 1.4rem;
+  margin: 0;
+  color: #444;
+  text-align: center;
+  font-weight: 600;
+}
+
+.info-board h2,
+.info-board h3 {
+  font-size: 1rem;
+  margin: 0.5rem 0 0.25rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.info-board section {
+  font-size: 0.85rem;
+}
+
+.info-board p {
+  margin: 0.2rem 0;
+}
+
+.info-board ul,
+.info-board ol {
+  padding-left: 1rem;
+  margin: 0.25rem 0;
+}
+
+.info-board li {
+  margin-bottom: 0.3rem;
+}
+
+.info-board a {
+  color: #0066cc;
+  text-decoration: none;
+  word-break: break-word;
+}
+.info-board a:hover {
+  text-decoration: underline;
+}
+
+code {
+  background: #eee;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
 }
