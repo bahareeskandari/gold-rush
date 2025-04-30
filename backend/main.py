@@ -344,7 +344,10 @@ def look(entityKey: str):
                     tile["type"] = "player"
                     tile_char = 'P'
                 visible.append(tile)
-            row.append(tile_char)
+            if 0 <= x < WORLD_SIZE and 0 <= y < WORLD_SIZE:
+                row.append(tile_char)
+            else:
+                row.append(' ')
         visual_board.append(' '.join(row))
     return {
         "visible": visible,
