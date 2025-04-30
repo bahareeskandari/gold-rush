@@ -52,7 +52,7 @@ export default function HackathonUserView({
           <strong>Gold left to pick up:</strong> {userData.totalGoldInGame}
         </p>
         <p style={{ fontSize: "0.85rem", color: "#888" }}>
-          Entity ID: {entityKey}
+          Entity key: {entityKey}
         </p>
       </div>
       <button className="logout-btn" onClick={onLogout}>

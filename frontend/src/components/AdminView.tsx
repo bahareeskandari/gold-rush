@@ -3,7 +3,7 @@ import React from "react";
 const TILE_EMOJI = {
   gold: "💰",
   spider: "🕷️",
-  mountain: "⛔️",
+  mountain: "⛰️",
 };
 
 type World = {

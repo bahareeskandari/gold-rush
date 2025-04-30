@@ -299,7 +299,7 @@ def register(request: RegisterRequest):
 
 @app.get(
     "/look",
-    summary="Shows a 5x5 area centered on the player",
+    summary="Shows a 5x5 area centered on the player. Rate Limit: 1 request every 2 seconds",
     description="Example: `/look?entityKey=1234567890`"
 )
 def look(entityKey: str):
@@ -351,7 +351,7 @@ def look(entityKey: str):
 
 @app.post(
     "/walk",
-    summary="Move your entity (N)orth, (S)outh, (E)ast or (W)est",
+    summary="Move your entity (N)orth, (S)outh, (E)ast or (W)est. Rate Limit: 1 request every 2 seconds.",
     description="""
 - You **cannot** move outside the board or onto a **mountain** tile.
 - If you try to move **onto a spider**, you will be **teleported** to a random location.
