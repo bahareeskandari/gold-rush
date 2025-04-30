@@ -41,17 +41,6 @@ const GameInfoBoard = () => {
       </section>
 
       <section>
-        <h2>Backend URL Endpoint</h2>
-        <p>
-          <a
-            href="https://gold-rush.fly.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            https://gold-rush.fly.dev
-          </a>
-        </p>
-
         <h3>Swagger UI</h3>
         <p>
           <a
@@ -63,14 +52,25 @@ const GameInfoBoard = () => {
           </a>
         </p>
 
-        <h3>Frontend Scoreboard</h3>
+        <h3>Backend URL Endpoint</h3>
         <p>
           <a
-            href="https://goldhfekwhkwfcbf,re"
+            href="https://gold-rush.fly.dev"
             target="_blank"
             rel="noopener noreferrer"
           >
-            https://goldhfekwhkwfcbf,re
+            https://gold-rush.fly.dev
+          </a>
+        </p>
+
+        <h3>Frontend Scoreboard</h3>
+        <p>
+          <a
+            href="https://gold-rush-frontend.fly.dev/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            https://gold-rush-frontend.fly.dev/
           </a>
         </p>
       </section>

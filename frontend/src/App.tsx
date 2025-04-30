@@ -5,7 +5,9 @@ import HackathonUserView from "./components/HackathonUserView";
 import Login from "./components/Login";
 import { UserData } from "./model";
 
-export const VITE_BACKEND_URL = "https://gold-rush.fly.dev"; //"http://127.0.0.1:8000" in developement mode
+//prod mode: "https://gold-rush.fly.dev"
+//dev mode: "http://127.0.0.1:8000"
+export const VITE_BACKEND_URL = "https://gold-rush.fly.dev";
 
 function App() {
   const [adminPassword, setAdminPassword] = useState("");
