@@ -42,6 +42,7 @@ export default function AdminView({
   replaying,
   setReplaying,
 }: Props) {
+  const [hideBoard, setHideBoard] = React.useState(false);
   const renderCell = (x: number, y: number, colIdx: number) => {
     const playerHere = world.leaderboard.some((p) => p.x === x && p.y === y);
     const isGoldTile = world.gold.some(([gx, gy]) => gx === x && gy === y);
@@ -110,15 +111,16 @@ export default function AdminView({
       </div>
 
       <div className="board-content">
-        {Array.from({ length: WORLD_SIZE }).map((_, row) => (
-          <React.Fragment key={row}>
-            {Array.from({ length: WORLD_SIZE }).map((_, colIdx) => {
-              const x = colIdx;
-              const y = WORLD_SIZE - 1 - row;
-              return renderCell(x, y, colIdx);
-            })}
-          </React.Fragment>
-        ))}
+        {!hideBoard &&
+          Array.from({ length: WORLD_SIZE }).map((_, row) => (
+            <React.Fragment key={row}>
+              {Array.from({ length: WORLD_SIZE }).map((_, colIdx) => {
+                const x = colIdx;
+                const y = WORLD_SIZE - 1 - row;
+                return renderCell(x, y, colIdx);
+              })}
+            </React.Fragment>
+          ))}
       </div>
 
       <div className="control-panel">
@@ -129,10 +131,13 @@ export default function AdminView({
           <button onClick={() => getLogs()}>▶️ Play summary of game</button>
         </div>
         <div className="logout-container">
-          <button onClick={clearLogs}>Clear logs</button>
-          <button className="logout-btn" onClick={onLogout}>
-            Logout
+          <button onClick={() => setHideBoard(!hideBoard)}>
+            {hideBoard ? "Show board" : "Hide board"}
           </button>
+          <button className="clear-log-btn" onClick={clearLogs}>
+            Clear logs
+          </button>
+          <button onClick={onLogout}>Logout</button>
         </div>
       </div>
     </div>
