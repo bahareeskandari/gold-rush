@@ -67,11 +67,7 @@ body, html, #root {
 }
 
 /* === Game board === */
-.board {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+
 .board-content {
   display: grid;
   grid-template-columns: repeat(var(--world-size), 1fr);
@@ -80,9 +76,6 @@ body, html, #root {
   width: min(90vmin, 90vh);
   margin: 0 auto;
 }
-
-
-
 
 .tile {
   width: 100%;
