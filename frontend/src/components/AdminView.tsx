@@ -33,7 +33,7 @@ type Entity = {
   y: number;
 };
 
-const WORLD_SIZE = 20;
+const WORLD_SIZE = 40;
 
 export default function AdminView({
   world,

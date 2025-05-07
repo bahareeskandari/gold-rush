@@ -54,7 +54,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-WORLD_SIZE = 20
+WORLD_SIZE = 40
 ENTITY_TIMEOUT = 3000
 
 entities = {}

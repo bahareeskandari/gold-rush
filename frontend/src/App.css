@@ -1,5 +1,5 @@
 :root {
-  --world-size: 20;
+  --world-size: 40;
   --tile-size: calc(100vh / var(--world-size));
 }
 
